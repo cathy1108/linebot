@@ -42,5 +42,5 @@ def handle_text_message(event):
         TextSendMessage(text=text)) #reply the same message from user
     
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
