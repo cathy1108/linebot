@@ -44,4 +44,4 @@ def handle_text_message(event):
 
 import os
 if __name__ == "__main__":
-    app.run(host='0.0.0.0',port=os.environ['PORT'])
+    app.run(host='127.0.0.1',port=os.environ['PORT'])
