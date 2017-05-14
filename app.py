@@ -1,46 +1,53 @@
-# encoding: utf-8
-from flask import Flask, request, abort
-
-from linebot import (
-    LineBotApi, WebhookHandler
-)
-from linebot.exceptions import (
-    InvalidSignatureError
-)
-from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
-)
+from flask import Flask, request
+import json
+import requests
 
 app = Flask(__name__)
 
-line_bot_api = LineBotApi('z+UnBJjmTu5BUzS4/vqJGvy3Q50OyoC/amuvZ4TtgTPJhI/TTX+ltwADrq52FU1apf/QfpMx48Tg2fqn583l7qxUBGZ6u6vnc1KmOvqD/AeisXXtF5/FDW52RkvtK0vIA8Ac11xSEiO0yQNK+IE08gdB04t89/1O/w1cDnyilFU=') #Your Channel Access Token
-handler = WebhookHandler('6b2c400a14237466a31d32667ea10829') #Your Channel Secret
+@app.route('/')
+def index():
+    return "<p>Hello World!</p>"
 
-@app.route("/callback", methods=['POST'])
+@app.route('/callback', methods=['POST'])
 def callback():
-    # get X-Line-Signature header value
-    signature = request.headers['X-Line-Signature']
+    json_line = request.get_json()
+    json_line = json.dumps(json_line)
+    decoded = json.loads(json_line)
+    user = decoded['result'][0]['content']['from']
+    text = decoded['result'][0]['content']['text']
+    #print(json_line)
+    print("使用者：",user)
+    print("內容：",text)
+    sendText(user,text)
+    return ''
 
-    # get request body as text
-    body = request.get_data(as_text=True)
-    app.logger.info("Request body: " + body)
+def sendText(user, text):
+    LINE_API = 'https://trialbot-api.line.me/v1/events'
+    CHANNEL_ID = '1514643849'
+    CHANNEL_SERECT = '6b2c400a14237466a31d32667ea10829'
+    MID = 'z+UnBJjmTu5BUzS4/vqJGvy3Q50OyoC/amuvZ4TtgTPJhI/TTX+ltwADrq52FU1apf/QfpMx48Tg2fqn583l7qxUBGZ6u6vnc1KmOvqD/AeisXXtF5/FDW52RkvtK0vIA8Ac11xSEiO0yQNK+IE08gdB04t89/1O/w1cDnyilFU='
 
-    # handle webhook body
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        abort(400)
+    headers = {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Line-ChannelID': CHANNEL_ID,
+        'X-Line-ChannelSecret': CHANNEL_SERECT,
+        'X-Line-Trusted-User-With-ACL': MID
+    }
 
-    return 'OK'
+    data = json.dumps({
+        "to": [user],
+        "toChannel":1383378250,
+        "eventType":"138311608800106203",
+        "content":{
+            "contentType":1,
+            "toType":1,
+            "text":text
+        }
+    })
 
-@handler.add(MessageEvent, message=TextMessage)
-def handle_text_message(event):
-    text = event.message.text #message from user
-
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=text)) #reply the same message from user
-    
+    #print("送出資料：",data)
+    r = requests.post(LINE_API, headers=headers, data=data)
+    #print(r.text)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+     app.run(debug=True)
